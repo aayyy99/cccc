@@ -26,7 +26,6 @@ jobs:
       # 关键修改：正确放置 'user: root'
       # 它必须直接缩进在 'container:' 下面，与 'image:' 处于同一级别。
       # ==========================================================
-      user: root 
     
     steps:
       - name: Checkout code # 检出你的代码仓库
