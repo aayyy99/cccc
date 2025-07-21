@@ -1,11 +1,15 @@
 name: IPTV All
-on:
-  push:
-    branches:
-      - main
-  schedule:
-    - cron: "0 9 * * *"
 
+on:
+  # push: # 已注释掉，不会在每次推送时运行
+  schedule:
+    - cron: "0 9 * * *" # 每天 UTC 上午 9 点运行
+  workflow_dispatch: # 添加手动触发事件
+    inputs:
+      reason:
+        description: '手动触发的原因'
+        required: false
+        default: '手动执行'
 jobs:
   build:
     runs-on: ubuntu-latest # Using the default GitHub Actions runner
