@@ -21,9 +21,10 @@ jobs:
       - name: Install dependencies
         run: pip install selenium requests
 
-      - name: Install ChromeDriver
+      - name: Download latest ChromeDriver
         run: |
-          wget https://chromedriver.storage.googleapis.com/120.0.6099.109/chromedriver_linux64.zip
+          CHROME_VERSION=$(curl -sS https://googlechromelabs.github.io/chrome-for-testing/latest-patch-versions-per-build-with-downloads.json | grep -oP '"build":\s*"\K[0-9.]+' | head -1)
+          wget https://chromedriver.storage.googleapis.com/${CHROME_VERSION}/chromedriver_linux64.zip
           unzip chromedriver_linux64.zip
           sudo mv chromedriver /usr/local/bin/
           rm chromedriver_linux64.zip
