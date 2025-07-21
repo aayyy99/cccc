@@ -21,6 +21,12 @@ jobs:
       image: selenium/standalone-chrome:latest 
       # 建议使用具体版本以确保稳定性，例如：selenium/standalone-chrome:126.0.6478.126-chromedriver-126.0.6478.126
       # 你可以在这里找到最新的版本: https://hub.docker.com/r/selenium/standalone-chrome/tags
+      
+      # ==========================================================
+      # 关键修改：添加 'user: root'
+      # 这会强制容器内的所有后续步骤以 root 用户身份运行，解决权限问题。
+      # ==========================================================
+      user: root 
     
     steps:
       - name: Checkout code # 检出你的代码仓库
@@ -58,8 +64,8 @@ jobs:
 
       - name: 提交并推送更改 # 将最新的直播源文件推送到 GitHub
         run: |
-          git config --local user.email "123"
-          git config --local user.name "123"
+          git config --local user.email "mmgg3381@gmail.com"
+          git config --local user.name "aayyy99"
           git add combined_livestreams.txt || echo "没有 combined_livestreams.txt 文件需要添加"
           git commit -m "更新合并后的电视直播源并清理旧文件" || echo "没有新的更改需要提交"
           git push
