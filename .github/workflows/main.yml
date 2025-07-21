@@ -8,8 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    container: selenium/standalone-chrome:114.0
+    runs-on: ubuntu-latest # Using the default GitHub Actions runner
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
