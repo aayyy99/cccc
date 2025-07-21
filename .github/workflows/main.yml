@@ -9,17 +9,10 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    container: selenium/standalone-chrome:114.0
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: 下载指定版本 Chromium（114）
-        run: |
-          wget https://github.com/macchrome/linchrome/releases/download/v114.0.5735.90-r1102108-portable-ungoogled-Lin64/ungoogled-chromium_114.0.5735.90_1.vaapi_linux.tar.xz
-          tar xf ungoogled-chromium_114.0.5735.90_1.vaapi_linux.tar.xz
-
-      - name: 查看 Chromium 版本（调试用）
-        run: ./ungoogled-chromium_114.0.5735.90_1.vaapi_linux/chrome --version
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -28,15 +21,6 @@ jobs:
 
       - name: 安装依赖
         run: pip install selenium requests
-
-      - name: 自动安装匹配版本 ChromeDriver
-        run: |
-          CHROME_VERSION=$(./ungoogled-chromium_114.0.5735.90_1.vaapi_linux/chrome --version | awk '{print $2}' | cut -d '.' -f 1)
-          DRIVER_VERSION=$(curl -sS "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION}")
-          wget "https://chromedriver.storage.googleapis.com/${DRIVER_VERSION}/chromedriver_linux64.zip"
-          unzip chromedriver_linux64.zip
-          sudo mv chromedriver /usr/local/bin/
-          sudo chmod +x /usr/local/bin/chromedriver
 
       - name: 运行脚本
         run: python ${{ github.workspace }}/IPTV.py
