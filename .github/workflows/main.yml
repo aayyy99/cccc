@@ -1,5 +1,12 @@
 name: IPTV All
 
+# ==========================================================
+# 关键：正确放置 retention-days！
+# 它应该在工作流的顶层，与 'name', 'on', 'run-name', 'jobs' 处于同一缩进级别。
+# 这会控制整个工作流运行记录和相关数据的保留天数。
+# ==========================================================
+retention-days: 1 # 示例：保留 1 天。你可以根据需要调整天数（1到90天）
+
 on:
   # push: # 已注释掉，不会在每次推送时运行
   schedule:
@@ -11,19 +18,13 @@ on:
         required: false
         default: '手动执行'
 
-run-name: IPTV 自动更新运行 # 这个保持在顶级是正确的
+run-name: IPTV 自动更新运行 # 这是另一个顶层属性，与 retention-days 同级
 
 jobs:
   build:
     runs-on: ubuntu-latest # 使用 GitHub Actions 默认的 Ubuntu 运行器
     
-    # ==========================================================
-    # 关键：正确放置 retention-days
-    # 现在它在 'build' job 的内部，与 runs-on, container 同级
-    # ==========================================================
-    retention-days: 7 
-
-    container: # 指定要使用的 Docker 容器
+    container: # 指定要使用的 Docker 容器，提供 Selenium 环境
       image: selenium/standalone-chrome:latest 
       # 建议使用具体版本以确保稳定性，例如：selenium/standalone-chrome:126.0.6478.126-chromedriver-126.0.6478.126
       # 你可以在这里找到最新的版本: https://hub.docker.com/r/selenium/standalone-chrome/tags
@@ -64,8 +65,8 @@ jobs:
 
       - name: 提交并推送更改 # 提交并推送更改
         run: |
-          git config --local user.email "mmgg3381@gmail.com"
-          git config --local user.name "aayyy99"
+          git config --local user.email "123"
+          git config --local user.name "123"
           git add combined_livestreams.txt || echo "没有 combined_livestreams.txt 文件需要添加"
           git commit -m "更新合并后的电视直播源并清理旧文件" || echo "没有新的更改需要提交"
           git push
