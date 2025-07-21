@@ -20,9 +20,9 @@ jobs:
 
       - name: 安装指定旧版 Chrome（126.0.6478.127）
         run: |
-          wget https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_126.0.6478.127-1_amd64.deb
-          sudo dpkg -i google-chrome-stable_126.0.6478.127-1_amd64.deb || sudo apt-get -f install -y
-          rm google-chrome-stable_126.0.6478.127-1_amd64.deb
+          wget https://ftp.slimjetbrowser.com/chrome/linux/126.0.6478.127/google-chrome-stable_current_amd64.deb
+          sudo dpkg -i google-chrome-stable_current_amd64.deb || sudo apt-get -f install -y
+          rm google-chrome-stable_current_amd64.deb
 
       - name: 查看Chrome版本（调试用）
         run: google-chrome --version
