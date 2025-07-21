@@ -19,10 +19,10 @@ jobs:
           sudo apt-get autoremove -y
 
       - name: 安装指定旧版 Chrome（126.0.6478.127）
-  run: |
-    wget --no-check-certificate https://ftp.slimjetbrowser.com/chrome/linux/126.0.6478.127/google-chrome-stable_current_amd64.deb
-    sudo dpkg -i google-chrome-stable_current_amd64.deb || sudo apt-get -f install -y
-    rm google-chrome-stable_current_amd64.deb
+        run: |
+          wget --no-check-certificate https://ftp.slimjetbrowser.com/chrome/linux/126.0.6478.127/google-chrome-stable_current_amd64.deb
+          sudo dpkg -i google-chrome-stable_current_amd64.deb || sudo apt-get -f install -y
+          rm google-chrome-stable_current_amd64.deb
 
       - name: 查看Chrome版本（调试用）
         run: google-chrome --version
