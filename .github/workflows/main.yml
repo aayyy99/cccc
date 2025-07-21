@@ -1,47 +1,40 @@
 name: IPTV All
 
-# ==========================================================
-# 关键：正确放置 retention-days！
-# 它应该在工作流的顶层，与 'name', 'on', 'run-name', 'jobs' 处于同一缩进级别。
-# 这会控制整个工作流运行记录和相关数据的保留天数。
-# ==========================================================
-retention-days: 1 # 示例：保留 1 天。你可以根据需要调整天数（1到90天）
-
 on:
   # push: # 已注释掉，不会在每次推送时运行
   schedule:
     - cron: "0 9 * * *" # 每天 UTC 上午 9 点运行
-  workflow_dispatch: # 添加手动触发事件
+  workflow_dispatch: # 添加手动触发事件，允许你手动运行工作流
     inputs:
       reason:
         description: '手动触发的原因'
         required: false
         default: '手动执行'
 
-run-name: IPTV 自动更新运行 # 这是另一个顶层属性，与 retention-days 同级
+run-name: IPTV 自动更新运行 # 工作流运行的名称，方便识别
 
 jobs:
   build:
     runs-on: ubuntu-latest # 使用 GitHub Actions 默认的 Ubuntu 运行器
     
-    container: # 指定要使用的 Docker 容器，提供 Selenium 环境
+    container: # 关键：指定 Docker 容器，提供 Selenium 环境
       image: selenium/standalone-chrome:latest 
       # 建议使用具体版本以确保稳定性，例如：selenium/standalone-chrome:126.0.6478.126-chromedriver-126.0.6478.126
       # 你可以在这里找到最新的版本: https://hub.docker.com/r/selenium/standalone-chrome/tags
     
     steps:
-      - name: Checkout code # 检出代码
+      - name: Checkout code # 检出你的代码仓库
         uses: actions/checkout@v4
 
-      - name: Set up Python # 设置 Python 环境 (在容器内部)
+      - name: Set up Python # 设置 Python 环境
         uses: actions/setup-python@v4
         with:
           python-version: '3.x'
 
-      - name: 安装 Python 依赖 # 安装 Python 库 (在容器内部)
+      - name: 安装 Python 依赖 # 安装 Selenium 和 Requests 库
         run: pip install selenium requests
 
-      - name: 等待 Selenium Hub 启动并就绪 # 解决 'Connection refused' 错误
+      - name: 等待 Selenium Hub 启动并就绪 # 关键：确保 Selenium 浏览器准备就绪，解决连接错误
         run: |
           echo "等待 Selenium Hub 在 localhost:4444 上启动..."
           until curl -s http://localhost:4444/wd/hub/status | grep '"ready": true' > /dev/null; do
@@ -49,12 +42,12 @@ jobs:
             sleep 5
           done
           echo "Selenium Hub 已就绪！"
-        timeout-minutes: 5 
+        timeout-minutes: 5 # 设置这个等待步骤的最长超时时间
 
-      - name: 运行直播源获取脚本 # 运行 get_tv_livestream.py 脚本
+      - name: 运行直播源获取脚本 # 执行你的 Python 脚本
         run: python ${{ github.workspace }}/get_tv_livestream.py
 
-      - name: 清理旧的生成文件
+      - name: 清理旧的生成文件 # 删除之前可能遗留的旧 .txt 文件
         run: |
           echo "开始清理旧的 .txt 文件..."
           rm -f IPTV.txt
@@ -63,7 +56,7 @@ jobs:
           rm -rf downloads/ 
           echo "旧文件清理完成。"
 
-      - name: 提交并推送更改 # 提交并推送更改
+      - name: 提交并推送更改 # 将最新的直播源文件推送到 GitHub
         run: |
           git config --local user.email "123"
           git config --local user.name "123"
