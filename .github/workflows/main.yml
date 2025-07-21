@@ -23,12 +23,30 @@ jobs:
       # 你可以在这里找到最新的版本: https://hub.docker.com/r/selenium/standalone-chrome/tags
       
       # ==========================================================
-      # 移除了所有导致语法错误的 'user' 和 'entrypoint' 属性
+      # 关键修改：使用自定义 entrypoint 脚本，强制 root 权限
       # ==========================================================
+      volumes:
+        - ${{ github.workspace }}:/__w/your_repo # 挂载你的仓库到容器内
+      entrypoint: /__w/your_repo/entrypoint.sh # 指定自定义入口点脚本的路径
     
     steps:
-      - name: Checkout code # 检出你的代码仓库
-        uses: actions/checkout@v4
+      # ==========================================================
+      # 移除 'Checkout code' 步骤！
+      # 因为我们现在通过自定义 entrypoint 和 git 命令来处理代码检出
+      # ==========================================================
+      # - name: Checkout code # 检出你的代码仓库
+      #   uses: actions/checkout@v4
+
+      # ==========================================================
+      # 新增：手动检出代码，确保在 root 权限下执行
+      # ==========================================================
+      - name: 手动检出代码
+        run: |
+          git config --global --add safe.directory /__w/your_repo # 添加工作目录为安全目录
+          git config --global user.email "mmgg3381@gmail.com" # 配置 Git 用户信息
+          git config --global user.name "aayyy99"
+          git checkout ${{ github.ref }} # 检出当前分支
+        working-directory: /__w/your_repo # 在挂载的仓库目录中执行
 
       - name: Set up Python # 设置 Python 环境
         uses: actions/setup-python@v4
@@ -49,7 +67,7 @@ jobs:
         timeout-minutes: 5 # 设置这个等待步骤的最长超时时间
 
       - name: 运行直播源获取脚本 # 执行你的 Python 脚本
-        run: python ${{ github.workspace }}/get_tv_livestream.py
+        run: python /__w/your_repo/get_tv_livestream.py # 注意路径已更改
 
       - name: 清理旧的生成文件 # 删除之前可能遗留的旧 .txt 文件
         run: |
@@ -59,11 +77,12 @@ jobs:
           rm -f shodan_general_iptv.txt zoomeye_general_iptv.txt
           rm -rf downloads/ 
           echo "旧文件清理完成。"
+        working-directory: /__w/your_repo # 确保在挂载的仓库目录中执行
 
       - name: 提交并推送更改 # 将最新的直播源文件推送到 GitHub
         run: |
-          git config --local user.email "mmgg3381@gmail.com"
-          git config --local user.name "aayyy99"
+          # Git config 已在手动检出步骤中完成，这里无需重复
           git add combined_livestreams.txt || echo "没有 combined_livestreams.txt 文件需要添加"
           git commit -m "更新合并后的电视直播源并清理旧文件" || echo "没有新的更改需要提交"
           git push
+        working-directory: /__w/your_repo # 确保在挂载的仓库目录中执行
