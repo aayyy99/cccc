@@ -4,7 +4,7 @@ on:
     branches:
       - main
   schedule:
-    - cron: "0 16 * * *"
+    - cron: "0 9 * * *"
 
 jobs:
   build:
@@ -16,7 +16,6 @@ jobs:
       - name: 安装稳定版 Chrome
         run: |
           sudo apt-get update
-          sudo apt-get install -y wget
           wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
           sudo dpkg -i google-chrome-stable_current_amd64.deb || sudo apt-get -f install -y
           rm google-chrome-stable_current_amd64.deb
@@ -29,10 +28,12 @@ jobs:
       - name: 安装依赖
         run: pip install selenium requests
 
-      - name: 自动安装匹配主版本的 ChromeDriver
+      - name: 自动安装匹配版本 ChromeDriver
         run: |
           CHROME_VERSION=$(google-chrome --version | awk '{print $3}' | cut -d '.' -f 1)
+          echo "当前Chrome主版本：$CHROME_VERSION"
           DRIVER_VERSION=$(curl -sS "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION}")
+          echo "获取到的ChromeDriver版本：$DRIVER_VERSION"
           wget "https://chromedriver.storage.googleapis.com/${DRIVER_VERSION}/chromedriver_linux64.zip"
           unzip chromedriver_linux64.zip
           sudo mv chromedriver /usr/local/bin/
