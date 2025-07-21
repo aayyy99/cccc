@@ -11,22 +11,20 @@ on:
         required: false
         default: '手动执行'
 
-# ==========================================================
-# 关键：设置工作流运行记录和 Artifacts 的保留天数
-# 例子：保留 7 天。你可以根据需要调整天数，最少 1 天，最多 90 天
-# 这将自动清理 GitHub Actions 界面上的旧运行历史和日志。
-# ==========================================================
-run-name: IPTV 自动更新运行 # 可以添加一个运行名称，方便识别
-retention-days: 7 
+run-name: IPTV 自动更新运行 # 这个保持在顶级是正确的
 
 jobs:
   build:
     runs-on: ubuntu-latest # 使用 GitHub Actions 默认的 Ubuntu 运行器
+    
     # ==========================================================
-    # 关键：指定要使用的 Docker 容器，提供 Selenium 环境
+    # 关键：正确放置 retention-days
+    # 现在它在 'build' job 的内部，与 runs-on, container 同级
     # ==========================================================
-    container: 
-      image: selenium/standalone-chrome:latest # 使用 Selenium 官方提供的包含 Chrome 的容器
+    retention-days: 7 
+
+    container: # 指定要使用的 Docker 容器
+      image: selenium/standalone-chrome:latest 
       # 建议使用具体版本以确保稳定性，例如：selenium/standalone-chrome:126.0.6478.126-chromedriver-126.0.6478.126
       # 你可以在这里找到最新的版本: https://hub.docker.com/r/selenium/standalone-chrome/tags
     
@@ -42,48 +40,32 @@ jobs:
       - name: 安装 Python 依赖 # 安装 Python 库 (在容器内部)
         run: pip install selenium requests
 
-      # ==========================================================
-      # 关键：新增步骤：等待 Selenium Hub 启动并就绪
-      # 解决 'Connection refused' 错误
-      # ==========================================================
-      - name: 等待 Selenium Hub 启动并就绪
+      - name: 等待 Selenium Hub 启动并就绪 # 解决 'Connection refused' 错误
         run: |
           echo "等待 Selenium Hub 在 localhost:4444 上启动..."
-          # 使用 curl 持续检查 Selenium Hub 的状态端点
-          # 如果状态是就绪，则循环结束
-          # -s 静默模式，-f 失败不输出错误，--retry 尝试次数，--retry-delay 每次重试间隔
           until curl -s http://localhost:4444/wd/hub/status | grep '"ready": true' > /dev/null; do
             echo "Selenium Hub 尚未就绪，等待 5 秒..."
             sleep 5
           done
           echo "Selenium Hub 已就绪！"
-        # 为这个等待步骤设置一个较长的超时时间，以防 Hub 启动缓慢
         timeout-minutes: 5 
 
       - name: 运行直播源获取脚本 # 运行 get_tv_livestream.py 脚本
         run: python ${{ github.workspace }}/get_tv_livestream.py
 
-      # ==========================================================
-      # 关键：新增步骤：清理旧的生成文件
-      # ==========================================================
       - name: 清理旧的生成文件
         run: |
           echo "开始清理旧的 .txt 文件..."
-          # 删除 IPTV.py 之前可能生成的文件 (使用 -f 选项，即使文件不存在也不会报错)
           rm -f IPTV.txt
           rm -f hebei.txt beijing.txt guangdong.txt shanghai.txt tianjin.txt chongqing.txt shanxi.txt shaanxi.txt liaoning.txt jiangsu.txt zhejiang.txt anhui.txt fujian.txt jiangxi.txt shandong.txt henan.txt hubei.txt hunan.txt
           rm -f shodan_general_iptv.txt zoomeye_general_iptv.txt
-          
-          # 清理 downloads 目录及其内容
           rm -rf downloads/ 
-
           echo "旧文件清理完成。"
 
       - name: 提交并推送更改 # 提交并推送更改
         run: |
-          git config --local user.email "123"
-          git config --local user.name "123"
-          # 关键：只添加新生成的 combined_livestreams.txt
+          git config --local user.email "mmgg3381@gmail.com"
+          git config --local user.name "aayyy99"
           git add combined_livestreams.txt || echo "没有 combined_livestreams.txt 文件需要添加"
           git commit -m "更新合并后的电视直播源并清理旧文件" || echo "没有新的更改需要提交"
           git push
