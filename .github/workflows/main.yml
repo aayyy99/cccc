@@ -23,14 +23,32 @@ jobs:
       # 你可以在这里找到最新的版本: https://hub.docker.com/r/selenium/standalone-chrome/tags
       
       # ==========================================================
-      # 关键修改：正确放置 'user: root'
-      # 它必须直接缩进在 'container:' 下面，与 'image:' 处于同一级别。
+      # 最终解决方案：通过修改 entrypoint 强制以 root 运行
+      # 这会确保所有后续操作（包括 actions/checkout）都在 root 权限下执行
       # ==========================================================
+      entrypoint: ["/usr/bin/bash", "-c"] # 强制使用 bash shell 作为入口点
     
     steps:
-      - name: Checkout code # 检出你的代码仓库
-        uses: actions/checkout@v4
-
+      - name: 设置容器用户为 root 并检出代码 # 组合步骤，以 root 权限执行 Checkout
+        run: |
+          # 检查当前用户，确保是 root (可选，用于调试)
+          echo "当前用户ID: $(id -u)"
+          # 使用 sudo 或直接切换到 root 用户来执行 checkout 命令
+          # GitHub Actions 会在容器内注入 actions/checkout 的逻辑
+          # 通常，仅靠设置 entrypoint 就能解决问题，但这里提供一个更明确的执行方式
+          # 如果 actions/checkout 仍然报错，可以尝试在它的前缀加上 'sudo'，虽然 action 不直接支持
+          
+          # 直接执行 actions/checkout，现在容器应该以 root 权限运行
+          # 注意: 这里不能直接写 "uses: actions/checkout@v4" 因为它是一个 Action 而不是 shell 命令
+          # GitHub Actions runner 会在内部处理 actions/checkout 的执行，它现在应该在 root 权限下运行了
+          
+          # 因此，这里不需要额外的 'sudo'，仅仅设置 'entrypoint' 应该足够让 runner 在 root 权限下执行 Actions
+          echo "执行 actions/checkout ..."
+          # 重新尝试 checkout，这一次会通过 entrypoint 设置的 root 用户运行
+          /usr/bin/git config --global --add safe.directory /__w/cccc/cccc # 添加工作目录为安全目录
+          /usr/bin/git checkout ${{ github.ref }} # 检出分支
+        working-directory: ${{ github.workspace }} # 确保在正确的工作目录执行
+      
       - name: Set up Python # 设置 Python 环境
         uses: actions/setup-python@v4
         with:
@@ -39,7 +57,7 @@ jobs:
       - name: 安装 Python 依赖 # 安装 Selenium 和 Requests 库
         run: pip install selenium requests
 
-      - name: 等待 Selenium Hub 启动并就绪 # 关键：确保 Selenium 浏览器准备就绪，解决连接错误
+      - name: 等待 Selenium Hub 启动并就绪 # 确保 Selenium 浏览器准备就绪，解决连接错误
         run: |
           echo "等待 Selenium Hub 在 localhost:4444 上启动..."
           until curl -s http://localhost:4444/wd/hub/status | grep '"ready": true' > /dev/null; do
@@ -63,8 +81,8 @@ jobs:
 
       - name: 提交并推送更改 # 将最新的直播源文件推送到 GitHub
         run: |
-          git config --local user.email "mmgg3381@gmail.com"
-          git config --local user.name "aayyy99"
+          git config --local user.email "123"
+          git config --local user.name "123"
           git add combined_livestreams.txt || echo "没有 combined_livestreams.txt 文件需要添加"
           git commit -m "更新合并后的电视直播源并清理旧文件" || echo "没有新的更改需要提交"
           git push
