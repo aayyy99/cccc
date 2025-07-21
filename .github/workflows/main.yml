@@ -4,7 +4,7 @@ on:
     branches:
       - main
   schedule:
-    - cron: "0 16 * * *"
+    - cron: "0 9 * * *"
 
 jobs:
   build:
@@ -18,22 +18,23 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Install dependencies
+      - name: 安装依赖
         run: pip install selenium requests
 
-      - name: Download latest ChromeDriver
+      - name: 自动下载最新版 ChromeDriver
         run: |
-          CHROME_VERSION=$(curl -sS https://googlechromelabs.github.io/chrome-for-testing/latest-patch-versions-per-build-with-downloads.json | grep -oP '"build":\s*"\K[0-9.]+' | head -1)
-          wget https://chromedriver.storage.googleapis.com/${CHROME_VERSION}/chromedriver_linux64.zip
+          # 获取最新版 chromedriver 版本号
+          LATEST_VERSION=$(curl -sS https://chromedriver.storage.googleapis.com/LATEST_RELEASE)
+          wget https://chromedriver.storage.googleapis.com/${LATEST_VERSION}/chromedriver_linux64.zip
           unzip chromedriver_linux64.zip
           sudo mv chromedriver /usr/local/bin/
           rm chromedriver_linux64.zip
           sudo chmod +x /usr/local/bin/chromedriver
 
-      - name: Run script
+      - name: 运行脚本
         run: python ${{ github.workspace }}/IPTV.py
 
-      - name: Commit and push changes
+      - name: 提交并推送更改
         run: |
           git config --local user.email "mmgg3381@gmail.com"
           git config --local user.name "aayyy99"
