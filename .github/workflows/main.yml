@@ -4,7 +4,7 @@ on:
     branches:
       - main
   schedule:
-    - cron: "0 16 * * *"
+    - cron: "0 9 * * *"
 
 jobs:
   build:
@@ -13,14 +13,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: 安装稳定版 Chrome
+      - name: 卸载系统自带 Chrome（避免高版本干扰）
         run: |
-          sudo apt-get update
-          wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-          sudo dpkg -i google-chrome-stable_current_amd64.deb || sudo apt-get -f install -y
-          rm google-chrome-stable_current_amd64.deb
+          sudo apt-get remove -y google-chrome-stable || true
+          sudo apt-get autoremove -y
 
-      - name: 查看Chrome版本（调试用，可删）
+      - name: 安装指定旧版 Chrome（126.0.6478.127）
+        run: |
+          wget https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_126.0.6478.127-1_amd64.deb
+          sudo dpkg -i google-chrome-stable_126.0.6478.127-1_amd64.deb || sudo apt-get -f install -y
+          rm google-chrome-stable_126.0.6478.127-1_amd64.deb
+
+      - name: 查看Chrome版本（调试用）
         run: google-chrome --version
 
       - name: Set up Python
