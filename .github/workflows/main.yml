@@ -13,19 +13,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: 卸载系统自带 Chrome（避免高版本干扰）
+      - name: 下载指定版本 Chromium
         run: |
-          sudo apt-get remove -y google-chrome-stable || true
-          sudo apt-get autoremove -y
+          wget https://github.com/macchrome/linchrome/releases/download/v136.7103.97-M136.0.7103.97-r1440670-portable-ungoogled-Lin64/ungoogled-chromium_136.0.7103.97_1.vaapi_linux.tar.xz
+          tar xf ungoogled-chromium_136.0.7103.97_1.vaapi_linux.tar.xz
 
-      - name: 安装指定旧版 Chrome（126.0.6478.127）
-        run: |
-          wget --no-check-certificate https://ftp.slimjetbrowser.com/chrome/linux/126.0.6478.127/google-chrome-stable_current_amd64.deb
-          sudo dpkg -i google-chrome-stable_current_amd64.deb || sudo apt-get -f install -y
-          rm google-chrome-stable_current_amd64.deb
-
-      - name: 查看Chrome版本（调试用）
-        run: google-chrome --version
+      - name: 查看 Chromium 版本（调试用）
+        run: ./ungoogled-chromium_136.0.7103.97_1.vaapi_linux/chrome --version
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -37,8 +31,8 @@ jobs:
 
       - name: 自动安装匹配版本 ChromeDriver
         run: |
-          CHROME_VERSION=$(google-chrome --version | awk '{print $3}' | cut -d '.' -f 1)
-          echo "当前Chrome主版本：$CHROME_VERSION"
+          CHROME_VERSION=$(./ungoogled-chromium_136.0.7103.97_1.vaapi_linux/chrome --version | awk '{print $2}' | cut -d '.' -f 1)
+          echo "当前Chromium主版本：$CHROME_VERSION"
           DRIVER_VERSION=$(curl -sS "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION}")
           echo "获取到的ChromeDriver版本：$DRIVER_VERSION"
           wget "https://chromedriver.storage.googleapis.com/${DRIVER_VERSION}/chromedriver_linux64.zip"
