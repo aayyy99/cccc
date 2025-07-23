@@ -1,4 +1,4 @@
-name: IPTV Web Scraper
+name: IPTV 直播源抓取
 
 on:
   schedule:
@@ -6,50 +6,23 @@ on:
   workflow_dispatch:
     inputs:
       reason:
-        description: '手动触发的原因'
+        description: '手动触发原因'
         required: false
-        default: '手动执行'
+        default: '手动运行'
 
-run-name: IPTV 自动抓取运行 - ${{ github.event.inputs.reason || github.run_id }}
+run-name: IPTV 抓取 - ${{ github.event.inputs.reason || github.run_id }}
 
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    container:
-      image: selenium/standalone-chrome:4.10.0
-      volumes:
-        - ${{ github.workspace }}:${{ github.workspace }} # 使用默认工作区路径
-      options: --user root --shm-size=2g
 
     steps:
-      - name: 检出代码
+      - name: 克隆仓库
         uses: actions/checkout@v4
-        with:
-          # 如果工作流运行在 aayyy99/cccc 仓库中，移除 repository 参数
-          # repository: aayyy99/cccc # 仅在克隆其他仓库时使用
-          token: ${{ secrets.GITHUB_TOKEN }}
-          ssh-strict: true
-          ssh-user: git
-          persist-credentials: true
-          clean: false # 禁用 clean，确保保留 .git 目录
-          sparse-checkout-cone-mode: false # 禁用 sparse-checkout，检出完整仓库
-          fetch-depth: 1
-          fetch-tags: false
-          show-progress: true
-          lfs: false
-          submodules: false
-          set-safe-directory: true
 
-      - name: 安装 Git
+      - name: 调试仓库
         run: |
-          apt-get update
-          apt-get install -y git
-          git --version
-        working-directory: ${{ github.workspace }}
-
-      - name: 调试 Git 仓库和文件系统
-        run: |
-          echo "GitHub workspace: ${{ github.workspace }}"
+          echo "工作目录: ${{ github.workspace }}"
           ls -la ${{ github.workspace }}
           if [ -d ${{ github.workspace }}/.git ]; then
             echo "Git 仓库存在"
@@ -64,55 +37,39 @@ jobs:
             echo "抓取脚本不存在"
             exit 1
           fi
-          whoami
-          id -u
-        working-directory: ${{ github.workspace }}
 
-      - name: 配置 Git
-        run: |
-          git config --global --add safe.directory ${{ github.workspace }}
-          git config --global user.email "mmgg3381@gmail.com"
-          git config --global user.name "aayyy99"
-        working-directory: ${{ github.workspace }}
-
-      - name: Set up Python
+      - name: 安装 Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
 
+      - name: 安装 Chrome 和 Chromedriver
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl unzip
+          # 安装 Chrome
+          curl -sS -o - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+          echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
+          sudo apt-get update
+          sudo apt-get install -y google-chrome-stable
+          # 安装 Chromedriver
+          CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+')
+          CHROMEDRIVER_VERSION=$(curl -sS https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_VERSION)
+          curl -sS -o /tmp/chromedriver.zip https://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip
+          unzip /tmp/chromedriver.zip -d /usr/local/bin/
+          chmod +x /usr/local/bin/chromedriver
+
       - name: 安装 Python 依赖
         run: |
           pip install --no-cache-dir -r ${{ github.workspace }}/requirements.txt
-        working-directory: ${{ github.workspace }}
-
-      - name: 等待 Selenium Hub 启动
-        run: |
-          echo "等待 Selenium Hub 在 localhost:4444 上启动..."
-          until curl -s http://localhost:4444/wd/hub/status | grep '"ready": true' > /dev/null; do
-            echo "Selenium Hub 尚未就绪，等待 5 秒..."
-            sleep 5
-          done
-          echo "Selenium Hub 已就绪！"
-        timeout-minutes: 5
-        working-directory: ${{ github.workspace }}
 
       - name: 运行抓取脚本
         run: python ${{ github.workspace }}/get_tv_livestream.py
-        working-directory: ${{ github.workspace }}
 
-      - name: 清理旧文件
+      - name: 提交并推送结果
         run: |
-          echo "开始清理旧的 .txt 文件..."
-          rm -f ${{ github.workspace }}/*.txt
-          rm -rf ${{ github.workspace }}/downloads/
-          echo "旧文件清理完成。"
-        working-directory: ${{ github.workspace }}
-
-      - name: 提交并推送更改
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          git add combined_livestreams.txt || echo "没有 combined_livestreams.txt 文件需要添加"
-          git commit -m "更新抓取的电视直播源并清理旧文件" || echo "没有新的更改需要提交"
-          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
-        working-directory: ${{ github.workspace }}
+          git config user.email "mmgg3381@gmail.com"
+          git config user.name "aayyy99"
+          git add combined_livestreams.txt || echo "没有 combined_livestreams.txt 文件"
+          git commit -m "更新直播源" || echo "没有更改需要提交"
+          git push
