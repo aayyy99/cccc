@@ -10,16 +10,16 @@ on:
         required: false
         default: '手动执行'
 
-run-name: IPTV 自动抓取运行
+run-name: IPTV 自动抓取运行 - ${{ github.event.inputs.reason || github.run_id }}
 
 jobs:
   scrape:
     runs-on: ubuntu-latest
     container:
-      image: selenium/standalone-chrome:126.0.6478.126 # 使用具体版本避免不兼容
+      image: selenium/standalone-chrome:126.0.6478.126 # 固定版本
       volumes:
         - ${{ github.workspace }}:/__w/your_repo
-      options: --user root # 以 root 用户运行，解决权限问题
+      options: --user root --shm-size=2g # 以 root 用户运行，增加共享内存
 
     steps:
       - name: 检出代码
@@ -34,7 +34,7 @@ jobs:
           git --version
         working-directory: /__w/your_repo
 
-      - name: 调试 Git 仓库
+      - name: 调试 Git 仓库和文件系统
         run: |
           ls -la /__w/your_repo
           if [ -d /__w/your_repo/.git ]; then
@@ -42,6 +42,12 @@ jobs:
             git status
           else
             echo "Git 仓库不存在"
+            exit 1
+          fi
+          if [ -f /__w/your_repo/get_tv_livestream.py ]; then
+            echo "抓取脚本存在"
+          else
+            echo "抓取脚本不存在"
             exit 1
           fi
           whoami
@@ -58,7 +64,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.x'
+          python-version: '3.11' # 指定具体 Python 版本
 
       - name: 安装 Python 依赖
         run: |
@@ -83,7 +89,6 @@ jobs:
       - name: 清理旧文件
         run: |
           echo "开始清理旧的 .txt 文件..."
-          rm -f /__w/your_repo/IPTV.txt
           rm -f /__w/your_repo/*.txt
           rm -rf /__w/your_repo/downloads/
           echo "旧文件清理完成。"
