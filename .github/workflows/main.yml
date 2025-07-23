@@ -1,62 +1,47 @@
 name: IPTV All
 
 on:
-  # push: # 已注释掉，不会在每次推送时运行
   schedule:
     - cron: "0 9 * * *" # 每天 UTC 上午 9 点运行
-  workflow_dispatch: # 添加手动触发事件，允许你手动运行工作流
+  workflow_dispatch:
     inputs:
       reason:
         description: '手动触发的原因'
         required: false
         default: '手动执行'
 
-run-name: IPTV 自动更新运行 # 工作流运行的名称，方便识别
+run-name: IPTV 自动更新运行
 
 jobs:
   build:
-    runs-on: ubuntu-latest # 使用 GitHub Actions 默认的 Ubuntu 运行器
-    
-    container: # 关键：指定 Docker 容器，提供 Selenium 环境
-      image: selenium/standalone-chrome:latest 
-      # 建议使用具体版本以确保稳定性，例如：selenium/standalone-chrome:126.0.6478.126-chromedriver-126.0.6478.126
-      # 你可以在这里找到最新的版本: https://hub.docker.com/r/selenium/standalone-chrome/tags
-      
-      # ==========================================================
-      # 关键修改：使用自定义 entrypoint 脚本，强制 root 权限
-      # ==========================================================
+    runs-on: ubuntu-latest
+    container:
+      image: selenium/standalone-chrome:latest
       volumes:
-        - ${{ github.workspace }}:/__w/your_repo # 挂载你的仓库到容器内
-      entrypoint: /__w/your_repo/entrypoint.sh # 指定自定义入口点脚本的路径
-    
-    steps:
-      # ==========================================================
-      # 移除 'Checkout code' 步骤！
-      # 因为我们现在通过自定义 entrypoint 和 git 命令来处理代码检出
-      # ==========================================================
-      # - name: Checkout code # 检出你的代码仓库
-      #   uses: actions/checkout@v4
+        - ${{ github.workspace }}:/__w/your_repo
 
-      # ==========================================================
-      # 新增：手动检出代码，确保在 root 权限下执行
-      # ==========================================================
+    steps:
+      - name: 执行自定义入口脚本
+        run: /__w/your_repo/entrypoint.sh
+        working-directory: /__w/your_repo
+
       - name: 手动检出代码
         run: |
-          git config --global --add safe.directory /__w/your_repo # 添加工作目录为安全目录
-          git config --global user.email "mmgg3381@gmail.com" # 配置 Git 用户信息
-          git config --global user.name "aayyy99"
-          git checkout ${{ github.ref }} # 检出当前分支
-        working-directory: /__w/your_repo # 在挂载的仓库目录中执行
+          git config --global --add safe.directory /__w/your_repo
+          git config --global user.email "123"
+          git config --global user.name "123"
+          git checkout ${{ github.ref }}
+        working-directory: /__w/your_repo
 
-      - name: Set up Python # 设置 Python 环境
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.x'
 
-      - name: 安装 Python 依赖 # 安装 Selenium 和 Requests 库
+      - name: 安装 Python 依赖
         run: pip install selenium requests
 
-      - name: 等待 Selenium Hub 启动并就绪 # 关键：确保 Selenium 浏览器准备就绪，解决连接错误
+      - name: 等待 Selenium Hub 启动并就绪
         run: |
           echo "等待 Selenium Hub 在 localhost:4444 上启动..."
           until curl -s http://localhost:4444/wd/hub/status | grep '"ready": true' > /dev/null; do
@@ -64,25 +49,25 @@ jobs:
             sleep 5
           done
           echo "Selenium Hub 已就绪！"
-        timeout-minutes: 5 # 设置这个等待步骤的最长超时时间
+        timeout-minutes: 5
 
-      - name: 运行直播源获取脚本 # 执行你的 Python 脚本
-        run: python /__w/your_repo/get_tv_livestream.py # 注意路径已更改
+      - name: 运行直播源获取脚本
+        run: python /__w/your_repo/get_tv_livestream.py
+        working-directory: /__w/your_repo
 
-      - name: 清理旧的生成文件 # 删除之前可能遗留的旧 .txt 文件
+      - name: 清理旧的生成文件
         run: |
           echo "开始清理旧的 .txt 文件..."
           rm -f IPTV.txt
           rm -f hebei.txt beijing.txt guangdong.txt shanghai.txt tianjin.txt chongqing.txt shanxi.txt shaanxi.txt liaoning.txt jiangsu.txt zhejiang.txt anhui.txt fujian.txt jiangxi.txt shandong.txt henan.txt hubei.txt hunan.txt
           rm -f shodan_general_iptv.txt zoomeye_general_iptv.txt
-          rm -rf downloads/ 
+          rm -rf downloads/
           echo "旧文件清理完成。"
-        working-directory: /__w/your_repo # 确保在挂载的仓库目录中执行
+        working-directory: /__w/your_repo
 
-      - name: 提交并推送更改 # 将最新的直播源文件推送到 GitHub
+      - name: 提交并推送更改
         run: |
-          # Git config 已在手动检出步骤中完成，这里无需重复
           git add combined_livestreams.txt || echo "没有 combined_livestreams.txt 文件需要添加"
           git commit -m "更新合并后的电视直播源并清理旧文件" || echo "没有新的更改需要提交"
           git push
-        working-directory: /__w/your_repo # 确保在挂载的仓库目录中执行
+        working-directory: /__w/your_repo
