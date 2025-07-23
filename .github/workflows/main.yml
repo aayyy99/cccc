@@ -18,20 +18,21 @@ jobs:
     container:
       image: selenium/standalone-chrome:4.10.0
       volumes:
-        - ${{ github.workspace }}:${{ github.workspace }} # 使用默认工作区
+        - ${{ github.workspace }}:${{ github.workspace }} # 使用默认工作区路径
       options: --user root --shm-size=2g
 
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
         with:
-          repository: aayyy99/cccc
+          # 如果工作流运行在 aayyy99/cccc 仓库中，移除 repository 参数
+          # repository: aayyy99/cccc # 仅在克隆其他仓库时使用
           token: ${{ secrets.GITHUB_TOKEN }}
           ssh-strict: true
           ssh-user: git
           persist-credentials: true
-          clean: true
-          sparse-checkout-cone-mode: true
+          clean: false # 禁用 clean，确保保留 .git 目录
+          sparse-checkout-cone-mode: false # 禁用 sparse-checkout，检出完整仓库
           fetch-depth: 1
           fetch-tags: false
           show-progress: true
@@ -48,6 +49,7 @@ jobs:
 
       - name: 调试 Git 仓库和文件系统
         run: |
+          echo "GitHub workspace: ${{ github.workspace }}"
           ls -la ${{ github.workspace }}
           if [ -d ${{ github.workspace }}/.git ]; then
             echo "Git 仓库存在"
