@@ -9,7 +9,7 @@ import os
 import re
 import random
 
-def wait_for_download(download_dir, timeout=30):
+def wait_for_download(download_dir, timeout=60):
     start_time = time.time()
     while time.time() - start_time < timeout:
         txt_files = [f for f in os.listdir(download_dir) if f.endswith('.txt')]
@@ -23,6 +23,7 @@ def get_livestream_data(search_keywords):
     current_dir = os.path.dirname(os.path.abspath(__file__))
     download_dir = os.path.join(current_dir, "downloads")
     os.makedirs(download_dir, exist_ok=True)
+    print(f"下载目录: {download_dir}")
 
     chrome_options = Options()
     chrome_options.add_argument('--headless')
@@ -30,6 +31,7 @@ def get_livestream_data(search_keywords):
     chrome_options.add_argument('--disable-dev-shm-usage')
     chrome_options.add_argument('--disable-gpu')
     chrome_options.add_argument('user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36')
+    chrome_options.add_argument('--disable-blink-features=AutomationControlled')
     prefs = {
         "download.default_directory": download_dir,
         "download.prompt_for_download": False,
@@ -42,17 +44,14 @@ def get_livestream_data(search_keywords):
     all_collected_urls = set()
 
     try:
-        driver = webdriver.Remote(
-            command_executor='http://localhost:4444/wd/hub',
-            options=chrome_options
-        )
+        driver = webdriver.Chrome(options=chrome_options)
         driver.get(url)
         print(f"正在访问：{url}")
         time.sleep(random.uniform(1, 3))
 
         print("等待并点击 '线路2'...")
         try:
-            line2_button = WebDriverWait(driver, 10).until(
+            line2_button = WebDriverWait(driver, 30).until(
                 EC.element_to_be_clickable((By.XPATH, "//button[contains(., '线路2')]"))
             )
             line2_button.click()
@@ -60,7 +59,7 @@ def get_livestream_data(search_keywords):
             print("线路2 按钮加载超时，尝试刷新页面...")
             driver.refresh()
             time.sleep(2)
-            line2_button = WebDriverWait(driver, 10).until(
+            line2_button = WebDriverWait(driver, 30).until(
                 EC.element_to_be_clickable((By.XPATH, "//button[contains(., '线路2')]"))
             )
             line2_button.click()
@@ -69,7 +68,7 @@ def get_livestream_data(search_keywords):
 
         for keyword in search_keywords:
             print(f"\n--- 正在搜索关键词: '{keyword}' ---")
-            search_input = WebDriverWait(driver, 10).until(
+            search_input = WebDriverWait(driver, 30).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, "input[placeholder='搜索关键词，回车搜索']"))
             )
             search_input.clear()
@@ -80,7 +79,7 @@ def get_livestream_data(search_keywords):
 
             print("等待 '一键下载TXT' 按钮...")
             try:
-                download_txt_button = WebDriverWait(driver, 10).until(
+                download_txt_button = WebDriverWait(driver, 30).until(
                     EC.element_to_be_clickable((By.XPATH, "//button[contains(., '一键下载TXT')]"))
                 )
                 download_txt_button.click()
@@ -89,7 +88,7 @@ def get_livestream_data(search_keywords):
                 print(f"未找到 '一键下载TXT' 按钮，跳过 '{keyword}'。")
                 continue
 
-            latest_file = wait_for_download(download_dir)
+            latest_file = wait_for_download(download_dir, timeout=120)
             if latest_file:
                 print(f"检测到新下载文件: {os.path.basename(latest_file)}")
                 with open(latest_file, 'r', encoding='utf-8', errors='ignore') as f:
