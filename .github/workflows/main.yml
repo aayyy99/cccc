@@ -19,13 +19,20 @@ jobs:
       image: selenium/standalone-chrome:latest
       volumes:
         - ${{ github.workspace }}:/__w/your_repo
+      options: --user root # 以 root 用户运行容器，解决权限问题
 
     steps:
-      - name: 执行自定义入口脚本
-        run: /__w/your_repo/entrypoint.sh
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 调试文件系统
+        run: |
+          ls -la /__w/your_repo
+          whoami
+          id -u
         working-directory: /__w/your_repo
 
-      - name: 手动检出代码
+      - name: 配置 Git
         run: |
           git config --global --add safe.directory /__w/your_repo
           git config --global user.email "mmgg3381@gmail.com"
