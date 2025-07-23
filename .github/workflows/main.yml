@@ -2,7 +2,7 @@ name: IPTV 直播源抓取
 
 on:
   schedule:
-    - cron: "0 9 * * *" # 每天 UTC 上午 9 点运行
+    - cro: "0 9 * * *" # 每天 UTC 上午 9 点运行
   workflow_dispatch:
     inputs:
       reason:
