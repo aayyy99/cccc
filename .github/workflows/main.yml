@@ -25,11 +25,11 @@ jobs:
       - name: 检出代码
         uses: actions/checkout@v4
 
-      - name: 调试文件系统
+      - name: 安装 Git
         run: |
-          ls -la /__w/your_repo
-          whoami
-          id -u
+          apt-get update
+          apt-get install -y git
+          git --version
         working-directory: /__w/your_repo
 
       - name: 配置 Git
@@ -37,7 +37,15 @@ jobs:
           git config --global --add safe.directory /__w/your_repo
           git config --global user.email "mmgg3381@gmail.com"
           git config --global user.name "aayyy99"
-          git checkout ${{ github.ref }}
+          git checkout refs/heads/main
+        working-directory: /__w/your_repo
+
+      - name: 调试文件系统
+        run: |
+          ls -la /__w/your_repo
+          whoami
+          id -u
+          git --version
         working-directory: /__w/your_repo
 
       - name: Set up Python
